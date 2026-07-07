@@ -62,8 +62,8 @@ fruit_display_width = width/4
 fruit_shift = width/4
 score_alignment = 50
 
-
 # game variables
+game_area = pygame.Rect(0, dashboard_height * 1.5, width, height - dashboard_height * 1.5)
 left_margin = 10
 right_margin = 10
 
@@ -315,7 +315,7 @@ def main():
                 game_completion = True
 
                 # display score
-                screen.fill(beige)
+                screen.fill(beige, game_area)
                 total_score_img = final_score_font.render(f"Final Score {str(player.total_score)}", True, (0,0,0))
                 total_rect = total_score_img.get_rect(center=(width/2, height/2))
                 screen.blit(total_score_img, total_rect)
