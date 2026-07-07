@@ -18,6 +18,7 @@ game_duration = 60000
 title_font = pygame.font.Font(None, 64)
 start_font = pygame.font.Font(None, 36)
 score_font = pygame.font.Font(None, 36)
+final_score_font = pygame.font.Font(None, 64)
 duration_font = pygame.font.Font(None, 48)
 font = pygame.font.Font(None, 24)
 
@@ -35,7 +36,15 @@ rule_two = "2. Each time you click on the wrong ingredient, your final score wil
 rule_three = "3. Press the Enter key to start the game!"
 instructions = [instructions_title, objective, rule_one, rule_two, rule_three]
 height_shift = 30
+
+# fruits used in game
 all_fruits = ["apple", "banana", "blueberry", "cherry", "coconut", "grape", "lemon", "mango", "orange", "peach", "pear", "pineapple", "strawberry"]
+# load fruit images
+fruit_images = {}
+for fruit in all_fruits:
+    img = pygame.image.load(os.path.join("images", f"{fruit}.png")).convert_alpha()
+    fruit_images[fruit] = pygame.transform.scale(img, (50, 50))
+
 
 # timer 
 timer_x = width/10
@@ -74,8 +83,9 @@ def game_instructions(title, instructions):
 
     
 class fruitGame:
-    def __init__(self, fruits, number):
+    def __init__(self, fruits, fruit_images, number):
         self.all_fruits = fruits
+        self.fruit_images = fruit_images
         # list to randomize in random_fruits method
         self.randomize_fruits = fruits
         self.number = number
@@ -85,15 +95,24 @@ class fruitGame:
         self.last_creation_time = self.start_time
 
         # randomnly select fruits that player needs to collect
-        self.selected_fruits = self.random_fruits()
+        self.fruit_salad = self.random_fruits()
 
-        #load images of randomnly selected fruits
-        self.random_images = self.load_images()
+        #extract images of chosen fruits to display on dashboard
+        self.dashboard_images = {}
+        for correct_fruit in self.fruit_salad:
+            self.dashboard_images[correct_fruit] = self.fruit_images[correct_fruit]
 
-        # create list of falling fruits
+        # create first batch of fruits
         self.falling_fruits = []
-        # create fruits
         self.fruit_creation()
+
+        # game scores
+        self.fruit_scores = {}
+        for fruit in self.fruit_salad:
+            self.fruit_scores[fruit] = 0
+
+        self.deductions = 0
+        self.total_score = 0
 
     def random_fruits(self):
         '''randomnly select a chosen number of fruits for each game and store in a list'''
@@ -106,16 +125,6 @@ class fruitGame:
             fruit_combo.append(selected_fruit)
         return fruit_combo
 
-    def load_images(self):
-        ''' load images of selected fruits '''
-        images = {}
-        # load + scale images of randomnly selected fruits
-        for fruit in (self.selected_fruits):
-            img = pygame.image.load(os.path.join("images",f"{fruit}.png")).convert_alpha()
-            #scale imgs the same size and store in dictionary
-            images[fruit] = pygame.transform.scale(img, (50, 50))
-        return images
-
     def game_timer(self):
         '''game is 60 seconds, calculate remaining time in ms'''
         #get current time since pygame.init started
@@ -127,7 +136,7 @@ class fruitGame:
         remaining_time = game_duration - current_duration
         return remaining_time
 
-    def dashboard(self, score, deductions):
+    def dashboard(self):
         '''dashboard to count randomnly selected fruits, display timer, and show deductions'''
 
         #blit countdown - convert to seconds
@@ -137,30 +146,32 @@ class fruitGame:
         screen.blit(countdown_img, countdown_rect) 
 
         # blit deductions
-        deductions_img = score_font.render(f"Deductions: {deductions}", True, (0, 0, 0))
+        deductions_img = score_font.render(f"Deductions: {self.deductions}", True, (0, 0, 0))
         deductions_rect = deductions_img.get_rect(center = (deductions_x, deductions_y))
         screen.blit(deductions_img, deductions_rect)
 
-        # blit fruit counter
-        for i, fruit_img in enumerate(self.random_images.values()):
+        # blit fruit dashboard
+        for i, (fruit_name, fruit_img) in enumerate(self.dashboard_images.items()):
             # blit fruit
             fruit_rect = fruit_img.get_rect(center = (fruit_display_width + (fruit_shift * i), dashboard_height))
             screen.blit(fruit_img, fruit_rect)
 
             # blit score
+            # extract score
+            score = str(self.fruit_scores[fruit_name])
             score_img = score_font.render(score, True, (0,0,0))
             score_rect = score_img.get_rect(center=(fruit_display_width + (fruit_shift * i) + score_alignment, dashboard_height))
             screen.blit(score_img, score_rect)
 
     def fruit_creation(self):
         '''create a random number of fruit instances and stores instances in a list'''
-        # random number of fruits that will fall at once
+        # random number of fruits that need to be created and will fall at once
         num_fruits = random.randint(1, 8)
 
         # create fruit instances from fallingFruit class 
         for i in range(num_fruits):
-            # add fruit to falling_fruits list
-            self.falling_fruits.append(fallingFruit(self.all_fruits))
+            # add each fruit to falling_fruits list
+            self.falling_fruits.append(fallingFruit(self.all_fruits, fruit_images))
 
     def creation_frequency(self):
         ''' control frequency at which new fruits are created '''
@@ -188,7 +199,7 @@ class fruitGame:
         '''controls movement of current fruits down the screen'''
 
         # loop through list of fruit instances and update coordinates on screen (i.e. make fruits fall)
-        for fruit in self.falling_fruits:
+        for fruit in self.falling_fruits[:]:
             fruit.update_y()
             fruit.draw_fruit()
 
@@ -196,41 +207,55 @@ class fruitGame:
             if fruit.x < 0 or fruit.x > width or fruit.y < 0 or fruit.y > height:
                 self.falling_fruits.remove(fruit)
 
-    def score(self):
-        '''count score'''
-        # correct fruit + no increase in completed fruit salads
-        # increase score of fruit by 1 and update dashboard
+    def score(self, event):
+        '''record and count score'''
 
-        # correct fruit + increase in completed fruit salads
-        # increase score of fruit by 1 and update dashboard + increase total score by 1
+        # check if player clicked a fruit
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            for falling_fruit in self.falling_fruits[:]:
+                # get rect of the falling fruit
+                rect = falling_fruit.image.get_rect(center=(falling_fruit.x, falling_fruit.y))
+                
+                # check if click occured within coordinates of one of the falling fruits
+                if rect.collidepoint(event.pos):
+                    # if yes, check if fruit is one of the correct fruits to click
+                    correct_fruit = False
+                    for fruit in self.fruit_salad:
+                        if fruit == falling_fruit.name:
+                            # increase score by 1
+                            self.fruit_scores[fruit] += 1
+                            print(f"{fruit} +1")
 
-        # when player clicks on incorrect fruit
-        # increase deductions score by 1 and decrease total score by 1
+                            # remove fruit instance from falling fruits instance list if correct
+                            self.falling_fruits.remove(falling_fruit)
+                            correct_fruit = True
+                            break
+                    if not correct_fruit:
+                        # fruit not any of the correct fruits, reduce score by 1
+                        self.deductions += 1
+                        self.total_score -= 1
+                        self.falling_fruits.remove(falling_fruit)
 
-        pass
+                    # update total score
+                    fruit_salad_score = sorted(list(self.fruit_scores.values()))[0]
+                    self.total_score = fruit_salad_score - self.deductions
+                    print(f"total score: {self.total_score}")
+
 
 class fallingFruit:
-    def __init__(self, fruits):
+    def __init__(self, fruits, fruit_images):
         self.fruits = fruits
-        #randomnly select a falling fruit
+        #randomnly select one falling fruit and store its name
         self.name = random.choice(fruits)
 
-        # create coordinates and falling speed
+        # store image of the falling fruit
+        self.image = fruit_images[self.name]
+
+        # create starting coordinates
         self.x = random.randint(left_margin, width - right_margin)
         # start falling fruits below dashboard
         self.y = dashboard_height * 2
         self.speed = random.randint(1,10)
-
-        # create image of fruit
-        self.image = self.load_image()
-
-    def load_image(self):
-        ''' load images of selected fruit'''
-        # load + scale the image of falling fruit
-        img = pygame.image.load(os.path.join("images",f"{self.name}.png")).convert_alpha()
-        #scale imgs the same size and store in dictionary
-        image = pygame.transform.scale(img, (50, 50))
-        return image
 
     def update_y(self):
         ''' update the y value to allow the fruit to move down screen'''
@@ -258,7 +283,9 @@ def main():
                 # start game when user presses enter
                 if event.key == pygame.K_RETURN and game_start == False:
                     game_start = True
-                    player = fruitGame(all_fruits, 3)
+                    player = fruitGame(all_fruits, fruit_images, 3)
+            if game_start:
+                player.score(event)
                     
         # display instructions
         if game_start == False and game_completion == False:
@@ -271,7 +298,7 @@ def main():
             screen.fill(beige)
 
             # display dashboard
-            player.dashboard(score, deductions)
+            player.dashboard()
 
             # move fruits down screen
             player.fruit_movement()
@@ -289,6 +316,9 @@ def main():
 
                 # display score
                 screen.fill(beige)
+                total_score_img = final_score_font.render(f"Final Score {str(player.total_score)}", True, (0,0,0))
+                total_rect = total_score_img.get_rect(center=(width/2, height/2))
+                screen.blit(total_score_img, total_rect)
 
         # flip() the display to put your work on screen
         pygame.display.flip()
