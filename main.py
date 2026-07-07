@@ -174,7 +174,7 @@ class fruitGame:
             self.falling_fruits.append(fallingFruit(self.all_fruits, fruit_images))
 
     def creation_frequency(self):
-        ''' control frequency at which new fruits are created '''
+        ''' control frequency at which new fruits are created. Create new fruits if  '''
         # timer counting up in ms 
         timer = pygame.time.get_ticks() - self.start_time
         
@@ -193,6 +193,7 @@ class fruitGame:
             self.last_creation_time = timer
             return True
         
+        # no new fruits need to be created yet
         return False
 
     def fruit_movement(self):
@@ -293,7 +294,7 @@ def main():
             game_instructions(game_title, instructions)
 
         # start game, 
-        if game_start == True:
+        if game_start == True and game_completion == False:
             # reset screen
             screen.fill(beige)
 
@@ -311,7 +312,6 @@ def main():
             # end game after 60 seconds
             if player.game_timer() <= 0:
                 pygame.time.delay(1000)
-                game_start = False
                 game_completion = True
 
                 # display score
