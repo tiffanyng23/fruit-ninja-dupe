@@ -2,86 +2,83 @@ import sys, pygame
 import os
 import random
 
+# Variables
+
 # pygame setup
 pygame.init()
-size = width, height = (1200, 800)
-screen = pygame.display.set_mode(size)
-title = pygame.display.set_caption("Food Ninja")
-
+SIZE = WIDTH, HEIGHT = (1200, 800)
+SCREEN = pygame.display.set_mode(SIZE)
+TITLE = pygame.display.set_caption("Fruit Salad")
 # control frame rate
-clock = pygame.time.Clock()
+CLOCK = pygame.time.Clock()
 #game duration (in ms)
-game_duration = 60000
-
+GAME_DURATION = 60000
 
 # fonts
-title_font = pygame.font.Font(None, 64)
-start_font = pygame.font.Font(None, 36)
-score_font = pygame.font.Font(None, 36)
-final_score_font = pygame.font.Font(None, 64)
-duration_font = pygame.font.Font(None, 48)
-font = pygame.font.Font(None, 24)
+TITLE_FONT = pygame.font.Font(None, 64)
+START_FONT = pygame.font.Font(None, 36)
+SCORE_FONT = pygame.font.Font(None, 36)
+FINAL_SCORE_FONT = pygame.font.Font(None, 64)
+PARAGRAPH_FONT = pygame.font.Font(None, 24)
 
 #colour scheme
-beige = 232, 230, 216
-white = 255, 255, 255
-grey = 203, 212, 214
+BEIGE = 232, 230, 216
+
+# timer display coordinates
+TIMER_X = WIDTH/10
+TIMER_Y = HEIGHT/40
+
+# deductions counter coordinates
+DEDUCTIONS_X = WIDTH - WIDTH/10
+DEDUCTIONS_Y = HEIGHT/40
+
+# fruit counter dashboard 
+score = "0"
+deductions = "0"
+FRUIT_DASHBOARD_HEIGHT = HEIGHT/12
+FRUIT_WIDTH = WIDTH/4
+FRUIT_SHIFT = WIDTH/4
+FRUIT_SCORE_ALIGNMENT = 50
+
+# game variables
+GAME_AREA = pygame.Rect(0, FRUIT_DASHBOARD_HEIGHT * 1.5, WIDTH, HEIGHT - FRUIT_DASHBOARD_HEIGHT * 1.5)
+GAME_LEFT_MARGIN = 10
+GAME_RIGHT_MARGIN = 10
 
 # homepage + instructions
-game_title = "Fruit Ninja Dupe"
+GAME_TITLE = "Fruit Salad"
 instructions_title = "How to Play"
 objective = "Objective: Create as many fruit salads as you can. The number of times you can create a complete version of the fruit salad will be your final score."
 rule_one = "1. The ingredients required for the fruit salad will be displayed at the top of the screen. Click on the correct fruits as they move across the screen."
 rule_two = "2. Each time you click on the wrong ingredient, your final score will be deducted by 1."
 rule_three = "3. Press the Enter key to start the game!"
-instructions = [instructions_title, objective, rule_one, rule_two, rule_three]
-height_shift = 30
+INSTRUCTIONS = [instructions_title, objective, rule_one, rule_two, rule_three]
+INSTRUCTIONS_HEIGHT_SHIFT = 30
 
 # fruits used in game
-all_fruits = ["apple", "banana", "blueberry", "cherry", "coconut", "grape", "lemon", "mango", "orange", "peach", "pear", "pineapple", "strawberry"]
-# load fruit images
-fruit_images = {}
-for fruit in all_fruits:
+ALL_FRUITS = ["apple", "banana", "blueberry", "cherry", "coconut", "grape", "lemon", "mango", "orange", "peach", "pear", "pineapple", "strawberry"]
+# load all fruit images
+FRUIT_IMAGES = {}
+for fruit in ALL_FRUITS:
     img = pygame.image.load(os.path.join("images", f"{fruit}.png")).convert_alpha()
-    fruit_images[fruit] = pygame.transform.scale(img, (50, 50))
+    FRUIT_IMAGES[fruit] = pygame.transform.scale(img, (50, 50))
 
 
-# timer 
-timer_x = width/10
-timer_y = height/40
-
-# deductions counter
-deductions_x = width - width/10
-deductions_y = height/40
-
-# fruit counter dashboard 
-score = "0"
-deductions = "0"
-dashboard_height = height/12
-fruit_display_width = width/4
-fruit_shift = width/4
-score_alignment = 50
-
-# game variables
-game_area = pygame.Rect(0, dashboard_height * 1.5, width, height - dashboard_height * 1.5)
-left_margin = 10
-right_margin = 10
-
-# functions
+# Functions
 def game_instructions(title, instructions):
     '''game instructions'''
-    title_img = title_font.render(game_title, True, (0,0,0))
-    title_rect = title_img.get_rect(center=(width/2, height/4))
-    screen.blit(title_img, title_rect)
+    title_img = TITLE_FONT.render(GAME_TITLE, True, (0,0,0))
+    title_rect = title_img.get_rect(center=(WIDTH/2, HEIGHT/4))
+    SCREEN.blit(title_img, title_rect)
 
     for i in range(len(instructions)):
-        rules_img = font.render(instructions[i], True, (0,0,0))
+        rules_img = PARAGRAPH_FONT.render(instructions[i], True, (0,0,0))
         # get coordinates at which you want to display the rules
         # shift coordinates for each step 
-        rules_rect = rules_img.get_rect(center=(width/2, (height/3 + height_shift * i)))
-        screen.blit(rules_img, rules_rect)
+        rules_rect = rules_img.get_rect(center=(WIDTH/2, (HEIGHT/3 + INSTRUCTIONS_HEIGHT_SHIFT * i)))
+        SCREEN.blit(rules_img, rules_rect)
 
-    
+# Classes    
 class fruitGame:
     def __init__(self, fruits, fruit_images, number):
         self.all_fruits = fruits
@@ -102,7 +99,7 @@ class fruitGame:
         for correct_fruit in self.fruit_salad:
             self.dashboard_images[correct_fruit] = self.fruit_images[correct_fruit]
 
-        # create first batch of fruits
+        # create first batch of randomized falling fruits
         self.falling_fruits = []
         self.fruit_creation()
 
@@ -133,7 +130,7 @@ class fruitGame:
         current_duration = current_time - self.start_time
 
         #display countdown
-        remaining_time = game_duration - current_duration
+        remaining_time = GAME_DURATION - current_duration
         return remaining_time
 
     def dashboard(self):
@@ -141,27 +138,27 @@ class fruitGame:
 
         #blit countdown - convert to seconds
         time_sec = round(self.game_timer()/1000, 1)
-        countdown_img = score_font.render(f"Time Left: {str(time_sec)}", True, (0, 0, 0))
-        countdown_rect = countdown_img.get_rect(center = (timer_x, timer_y))
-        screen.blit(countdown_img, countdown_rect) 
+        countdown_img = SCORE_FONT.render(f"Time Left: {str(time_sec)}", True, (0, 0, 0))
+        countdown_rect = countdown_img.get_rect(center = (TIMER_X, TIMER_Y))
+        SCREEN.blit(countdown_img, countdown_rect) 
 
         # blit deductions
-        deductions_img = score_font.render(f"Deductions: {self.deductions}", True, (0, 0, 0))
-        deductions_rect = deductions_img.get_rect(center = (deductions_x, deductions_y))
-        screen.blit(deductions_img, deductions_rect)
+        deductions_img = SCORE_FONT.render(f"Deductions: {self.deductions}", True, (0, 0, 0))
+        deductions_rect = deductions_img.get_rect(center = (DEDUCTIONS_X, DEDUCTIONS_Y))
+        SCREEN.blit(deductions_img, deductions_rect)
 
         # blit fruit dashboard
         for i, (fruit_name, fruit_img) in enumerate(self.dashboard_images.items()):
             # blit fruit
-            fruit_rect = fruit_img.get_rect(center = (fruit_display_width + (fruit_shift * i), dashboard_height))
-            screen.blit(fruit_img, fruit_rect)
+            fruit_rect = fruit_img.get_rect(center = (FRUIT_WIDTH + (FRUIT_SHIFT * i), FRUIT_DASHBOARD_HEIGHT))
+            SCREEN.blit(fruit_img, fruit_rect)
 
             # blit score
             # extract score
             score = str(self.fruit_scores[fruit_name])
-            score_img = score_font.render(score, True, (0,0,0))
-            score_rect = score_img.get_rect(center=(fruit_display_width + (fruit_shift * i) + score_alignment, dashboard_height))
-            screen.blit(score_img, score_rect)
+            score_img = SCORE_FONT.render(score, True, (0,0,0))
+            score_rect = score_img.get_rect(center=(FRUIT_WIDTH + (FRUIT_SHIFT * i) + FRUIT_SCORE_ALIGNMENT, FRUIT_DASHBOARD_HEIGHT))
+            SCREEN.blit(score_img, score_rect)
 
     def fruit_creation(self):
         '''create a random number of fruit instances and stores instances in a list'''
@@ -170,8 +167,8 @@ class fruitGame:
 
         # create fruit instances from fallingFruit class 
         for i in range(num_fruits):
-            # add each fruit to falling_fruits list
-            self.falling_fruits.append(fallingFruit(self.all_fruits, fruit_images))
+            # loop num_fruits number of times - each loop generates one random fruit image starting at a random x coordinate
+            self.falling_fruits.append(fallingFruit(self.all_fruits, FRUIT_IMAGES))
 
     def creation_frequency(self):
         ''' control frequency at which new fruits are created. Create new fruits if  '''
@@ -179,11 +176,11 @@ class fruitGame:
         timer = pygame.time.get_ticks() - self.start_time
         
         # frequency at which new fruits should be created in ms
-        if timer < game_duration * 0.25:
+        if timer < GAME_DURATION * 0.25:
             interval = 4000
-        elif timer < game_duration * 0.5:
+        elif timer < GAME_DURATION * 0.5:
             interval = 3000
-        elif timer < game_duration * 0.75:
+        elif timer < GAME_DURATION * 0.75:
             interval = 2000
         else:
             interval = 1000
@@ -205,7 +202,7 @@ class fruitGame:
             fruit.draw_fruit()
 
             # remove fruit from falling list if outside of screen
-            if fruit.x < 0 or fruit.x > width or fruit.y < 0 or fruit.y > height:
+            if fruit.x < 0 or fruit.x > WIDTH or fruit.y < 0 or fruit.y > HEIGHT:
                 self.falling_fruits.remove(fruit)
 
     def score(self, event):
@@ -246,16 +243,16 @@ class fruitGame:
 class fallingFruit:
     def __init__(self, fruits, fruit_images):
         self.fruits = fruits
-        #randomnly select one falling fruit and store its name
+        #randomnly select one falling fruit out of all the available fruits and store its name
         self.name = random.choice(fruits)
 
-        # store image of the falling fruit
+        # extract + store image of the falling fruit
         self.image = fruit_images[self.name]
 
-        # create starting coordinates
-        self.x = random.randint(left_margin, width - right_margin)
-        # start falling fruits below dashboard
-        self.y = dashboard_height * 2
+        # create random starting x coordinate for the fruit
+        self.x = random.randint(GAME_LEFT_MARGIN, WIDTH - GAME_RIGHT_MARGIN)
+        # start falling fruit at a standard y coordinate 
+        self.y = FRUIT_DASHBOARD_HEIGHT * 2
         self.speed = random.randint(1,10)
 
     def update_y(self):
@@ -265,9 +262,9 @@ class fallingFruit:
     def draw_fruit(self):
         ''' draw fruit on screen '''
         falling_rect = self.image.get_rect(center = (self.x, self.y))
-        screen.blit(self.image, falling_rect)
+        SCREEN.blit(self.image, falling_rect)
 
-
+# Game Loop
 def main():
     run = True
     # users can view instructions before game
@@ -284,19 +281,19 @@ def main():
                 # start game when user presses enter
                 if event.key == pygame.K_RETURN and game_start == False:
                     game_start = True
-                    player = fruitGame(all_fruits, fruit_images, 3)
+                    player = fruitGame(ALL_FRUITS, FRUIT_IMAGES, 3)
             if game_start:
                 player.score(event)
                     
         # display instructions
         if game_start == False and game_completion == False:
-            screen.fill(beige)
-            game_instructions(game_title, instructions)
+            SCREEN.fill(BEIGE)
+            game_instructions(GAME_TITLE, INSTRUCTIONS)
 
         # start game, 
         if game_start == True and game_completion == False:
             # reset screen
-            screen.fill(beige)
+            SCREEN.fill(BEIGE)
 
             # display dashboard
             player.dashboard()
@@ -315,15 +312,15 @@ def main():
                 game_completion = True
 
                 # display score
-                screen.fill(beige, game_area)
-                total_score_img = final_score_font.render(f"Final Score {str(player.total_score)}", True, (0,0,0))
-                total_rect = total_score_img.get_rect(center=(width/2, height/2))
-                screen.blit(total_score_img, total_rect)
+                SCREEN.fill(BEIGE, GAME_AREA)
+                total_score_img = FINAL_SCORE_FONT.render(f"Final Score: {str(player.total_score)}", True, (0,0,0))
+                total_rect = total_score_img.get_rect(center=(WIDTH/2, HEIGHT/2))
+                SCREEN.blit(total_score_img, total_rect)
 
         # flip() the display to put your work on screen
         pygame.display.flip()
         # runs 60 frames per second
-        clock.tick(60)
+        CLOCK.tick(60)
 
 if __name__ == "__main__":
     main()
