@@ -83,8 +83,10 @@ class fruitGame:
     def __init__(self, fruits, fruit_images, number):
         self.all_fruits = fruits
         self.fruit_images = fruit_images
+
         # list to randomize in random_fruits method
         self.randomize_fruits = fruits
+        # number of fruits to be selected for the salad
         self.number = number
 
         # start game timer - time since pygame.init started
@@ -103,7 +105,7 @@ class fruitGame:
         self.falling_fruits = []
         self.fruit_creation()
 
-        # game scores
+        # game score
         self.fruit_scores = {}
         for fruit in self.fruit_salad:
             self.fruit_scores[fruit] = 0
