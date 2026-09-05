@@ -46,6 +46,7 @@ def main():
                 # start game when user presses enter
                 if event.key == pygame.K_RETURN and game_start == False:
                     game_start = True
+                    # create game environment for one game
                     player = FruitGame(ALL_FRUITS, FRUIT_IMAGES, 3)
             if game_start:
                 player.score(event)
@@ -55,7 +56,7 @@ def main():
             screen.fill(BEIGE)
             game_instructions(GAME_TITLE, INSTRUCTIONS, screen, TITLE_FONT, PARAGRAPH_FONT)
 
-        # start game, 
+        # start game
         if game_start == True and game_completion == False:
             # reset screen
             screen.fill(BEIGE)
@@ -82,9 +83,7 @@ def main():
                 total_rect = total_score_img.get_rect(center=(WIDTH/2, HEIGHT/2))
                 screen.blit(total_score_img, total_rect)
 
-        # flip() the display to put your work on screen
         pygame.display.flip()
-        # runs 60 frames per second
         clock.tick(60)
 
 if __name__ == "__main__":
